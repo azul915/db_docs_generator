@@ -1,0 +1,17 @@
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS `sample` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'コメント',
+  `c1` VARCHAR(255) NOT NULL DEFAULT 'hoge' COMMENT 'コメント',
+  `c2` TEXT,
+  `c3` TINYINT,
+  `c4` SMALLINT,
+  `c5` INT,
+  `c6` BIGINT,
+  `c7` DATETIME,
+  `c8` TIMESTAMP,
+  PRIMARY KEY(`id`),
+  UNIQUE(`c1`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT 'コメント';
+
+-- +migrate Down
+DROP TABLE IF EXISTS `sample`;

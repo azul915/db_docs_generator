@@ -1,0 +1,56 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:8.0
+    env_file: .env
+    volumes:
+    - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    # - ./docker/sql-migrate/migrations/:/docker-entrypoint-initdb.d/
+  migration:
+    build:
+      context: .
+      dockerfile: ./docker/sql-migrate/Dockerfile
+    command:
+    - /bin/sh
+    - -c
+    - |
+      until mysqladmin ping -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD --silent; do
+        echo 'waiting for mysql...'
+        sleep 1
+      done
+      sql-migrate up
+    env_file: .env
+    volumes:
+    - ./docker/sql-migrate/migrations:/migrations
+    - ./docker/sql-migrate/dbconfig.yml:/dbconfig.yml
+    depends_on:
+    - mysql
+  schemaspy:
+    build:
+      context: .
+      dockerfile: ./docker/schemaspy/Dockerfile
+    command:
+    - /bin/sh
+    - -c
+    - |
+      until mysqladmin ping -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD --silent; do
+        echo 'waiting for mysql...'
+        sleep 1
+      done
+      sleep 5
+      java -jar schemaspy.jar -configFile schemaspy.properties
+    env_file: .env
+    volumes:
+    - ./docker/schemaspy/config/schemaspy.properties:/schemaspy.properties
+    - ./output:/output
+    depends_on:
+    - migration
+  nginx:
+    image: nginx:1.13.9-alpine
+    volumes:
+    - ./output:/var/www/html
+    - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+    - "8081:80"
+    env_file: .env
+    command: "nginx -g 'daemon off;'"
